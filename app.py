@@ -7,7 +7,7 @@ import dash
 from dash import dcc, html, dash_table, Input, Output, callback
 import dash_bootstrap_components as dbc
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 import traceback
 from tdx_service import get_train_data
@@ -183,11 +183,11 @@ def update_train_table(n_intervals, n_clicks, trigger):
         train_data = get_train_data()
         
         if not train_data:
-            empty_fig = go.Figure()
-            empty_fig.update_layout(
+            empty_fig = px.bar(
+                x=[],
+                y=[],
                 title="目前沒有列車資料",
-                xaxis_title="車次",
-                yaxis_title="延遲時間 (分鐘)"
+                labels={'x': '車次', 'y': '延遲時間 (分鐘)'}
             )
             return (
                 html.Div("目前沒有列車資料", className="alert alert-warning"),
@@ -273,18 +273,22 @@ def update_train_table(n_intervals, n_clicks, trigger):
             else:
                 colors.append('#dc3545')  # 紅色 - 嚴重延遲
         
-        fig = go.Figure(data=[
-            go.Bar(
-                x=df['車次'],
-                y=df['延遲時間'],
-                marker_color=colors,
-                text=df['延遲時間'],
-                textposition='outside',
-                hovertemplate='<b>車次:</b> %{x}<br>' +
-                              '<b>延遲時間:</b> %{y} 分鐘<br>' +
-                              '<extra></extra>'
-            )
-        ])
+        # 使用 plotly.express 建立圖表
+        fig = px.bar(
+            df,
+            x='車次',
+            y='延遲時間',
+            text='延遲時間',
+            title='各車次延遲時間統計',
+            labels={'車次': '車次', '延遲時間': '延遲時間 (分鐘)'},
+            hover_data={'車次': True, '列車類型': True, '即將到達': True, '延遲時間': True}
+        )
+        
+        # 更新圖表樣式
+        fig.update_traces(
+            marker_color=colors,
+            textposition='outside'
+        )
         
         fig.update_layout(
             title={
@@ -293,8 +297,6 @@ def update_train_table(n_intervals, n_clicks, trigger):
                 'xanchor': 'center',
                 'font': {'size': 18, 'color': '#0066cc'}
             },
-            xaxis_title='車次',
-            yaxis_title='延遲時間 (分鐘)',
             xaxis={
                 'tickangle': -45,
                 'tickfont': {'size': 10}
@@ -305,8 +307,7 @@ def update_train_table(n_intervals, n_clicks, trigger):
             plot_bgcolor='#f8f9fa',
             paper_bgcolor='white',
             height=500,
-            margin=dict(t=80, b=100, l=60, r=40),
-            hovermode='x unified'
+            margin=dict(t=80, b=100, l=60, r=40)
         )
         
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -323,11 +324,11 @@ def update_train_table(n_intervals, n_clicks, trigger):
         print(f"錯誤: {error_msg}")
         print(traceback.format_exc())
         
-        empty_fig = go.Figure()
-        empty_fig.update_layout(
+        empty_fig = px.bar(
+            x=[],
+            y=[],
             title="資料載入失敗",
-            xaxis_title="車次",
-            yaxis_title="延遲時間 (分鐘)"
+            labels={'x': '車次', 'y': '延遲時間 (分鐘)'}
         )
         
         return (
